@@ -1,3 +1,5 @@
+#ifndef FUNCTIONS_H
+#define FUCNTIONS_H
 #include "datas.h"
 
 #include <stdio.h> /*FILE*/
@@ -23,3 +25,4 @@ void fdisplay_attribute(FILE *f, const struct attribute_t *attribute);
 void fdisplay_tree_tab(FILE *f, struct node_t *tree, int n_tab);
 
 void label_example(struct example_t *example_to_label, struct node_t *tree);
+#endif
