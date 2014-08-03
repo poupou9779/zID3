@@ -1,39 +1,70 @@
 		examples :
-Ensoleille Chaud Elevee Faible Non
-Ensoleille Chaud Elevee Fort Non
-Nuageux Chaud Elevee Faible Oui
-Pluvieux Moyen Elevee Faible Oui
-Pluvieux Frais Normale Faible Oui
-Pluvieux Frais Normale Fort Non
+Sunny Hot High Weak No
+Sunny Hot High Strong No
+Overcast Hot High Weak Yes
+Rain Mild High Weak Yes
+Rain Cool Normal Weak Yes
+Rain Cool Normal Strong No
+Overcast Cool Normal Strong Yes
+Sunny Mild High Weak No
+Sunny Cool Normal Weak Yes
+Rain Mild Normal Weak Yes
+Sunny Mild Normal Strong Yes
+Overcast Mild High Strong Yes
+Overcast Hot Normal Weak Yes
+Rain Mild High Strong No
 		attributes :
-Previsions Temperature Humidite Vent 
+Outlook Temperature Humidity Wind 
 
 		examples :
-Ensoleille Chaud Elevee Faible Non
-Ensoleille Chaud Elevee Fort Non
+Sunny Hot High Weak No
+Sunny Hot High Strong No
+Sunny Mild High Weak No
+Sunny Cool Normal Weak Yes
+Sunny Mild Normal Strong Yes
 		attributes :
-Temperature Humidite Vent 
+Temperature Humidity Wind 
 
 		examples :
-Nuageux Chaud Elevee Faible Oui
+Sunny Hot High Weak No
+Sunny Hot High Strong No
+Sunny Mild High Weak No
 		attributes :
-Temperature Humidite Vent 
+Temperature Wind 
 
 		examples :
-Pluvieux Moyen Elevee Faible Oui
-Pluvieux Frais Normale Faible Oui
-Pluvieux Frais Normale Fort Non
+Sunny Cool Normal Weak Yes
+Sunny Mild Normal Strong Yes
 		attributes :
-Temperature Humidite Vent 
+Temperature Wind 
 
 		examples :
-Pluvieux Moyen Elevee Faible Oui
-Pluvieux Frais Normale Faible Oui
+Overcast Hot High Weak Yes
+Overcast Cool Normal Strong Yes
+Overcast Mild High Strong Yes
+Overcast Hot Normal Weak Yes
 		attributes :
-Temperature Humidite 
+Temperature Humidity Wind 
 
 		examples :
-Pluvieux Frais Normale Fort Non
+Rain Mild High Weak Yes
+Rain Cool Normal Weak Yes
+Rain Cool Normal Strong No
+Rain Mild Normal Weak Yes
+Rain Mild High Strong No
 		attributes :
-Temperature Humidite 
+Temperature Humidity Wind 
+
+		examples :
+Rain Mild High Weak Yes
+Rain Cool Normal Weak Yes
+Rain Mild Normal Weak Yes
+		attributes :
+Temperature Humidity 
+
+		examples :
+Rain Cool Normal Strong No
+Rain Mild High Strong No
+		attributes :
+Temperature Humidity 
 

@@ -4,17 +4,17 @@
 2 Humidity High Normal
 2 Wind Weak Strong
 14
-Sunny Hot High Weak Non
-Sunny Hot High Strong Non
-Overcast Hot High Weak Oui
-Rain Mild High Weak Oui
-Rain Cool Normal Weak Oui
-Rain Cool Normal Strong Non
-Overcast Cool Normal Strong Oui
-Sunny Mild High Weak Non
-Sunny Cool Normal Weak Oui
-Rain Mild Normal Weak Oui
-Sunny Mild Normal Strong Oui
-Overcast Mild High Strong Oui
-Overcast Hot Normal Weak Oui
-Rain Mild High Strong Non
+Sunny Hot High Weak No
+Sunny Hot High Strong No
+Overcast Hot High Weak Yes
+Rain Mild High Weak Yes
+Rain Cool Normal Weak Yes
+Rain Cool Normal Strong No
+Overcast Cool Normal Strong Yes
+Sunny Mild High Weak No
+Sunny Cool Normal Weak Yes
+Rain Mild Normal Weak Yes
+Sunny Mild Normal Strong Yes
+Overcast Mild High Strong Yes
+Overcast Hot Normal Weak Yes
+Rain Mild High Strong No

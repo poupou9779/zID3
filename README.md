@@ -5,4 +5,4 @@ It is a decision tree based on Shannon entropy.
 
 ##TODO
 * comment code (in english)
-* look for unfreed memory
+* complete C4.5 algorithm

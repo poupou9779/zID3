@@ -27,7 +27,7 @@ int main(void)
 #endif
 
     get_datas_from_file(DATA_FILE, &examples, &n_ex, &attributes_set, &n_attr_set);
-    tree = build_ID3_tree(examples, n_ex, attributes_set, n_attr_set);
+    tree = build_C45_tree(examples, n_ex, attributes_set, n_attr_set);
 
 #ifdef LOG
     fclose(log_file);
@@ -45,6 +45,8 @@ int main(void)
     printf("class is [%s]\n", example_to_label.label);
 
     free(example_to_label.attributes);
-    /*delete_tree(&tree);*/
+    delete_tree(&tree);
+    free_examples(&examples, n_ex);
+    free_attributes(&attributes_set, n_attr_set);
     return EXIT_SUCCESS;
 }

@@ -21,10 +21,12 @@ static void add_example(struct example_t *tab, int *index, const struct example_
 static void add_attribute(struct attribute_t *tab, int *index, const struct attribute_t *attribute);
 static int get_index_attribute(const string name, const struct attribute_t *attributes, int n_attr);
 static double gain(const struct attribute_t *attribute, const struct example_t *examples, int n_ex);
-static int optimal_attribute_index(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex);
+static int optimal_attribute_index_gain(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex);
+static int optimal_attribute_index_gain_ratio(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex);
 static struct node_t *new_node(const struct attribute_t *attribute);
 static struct example_t *create_subset_ex_from_attr(const struct example_t *examples, int n_ex, int *len_subset, int index_attribute, string value);
 static struct attribute_t *create_subset_attribute_without(const struct attribute_t *attributes, int n_attr, int index);
+static double gain_ratio(const struct attribute_t *attribute, const struct example_t *examples, int n_ex);
 
 void get_datas_from_file(const char *path, struct example_t **ex, int *n_ex, struct attribute_t **attr, int *n_attr)
 {
@@ -87,7 +89,7 @@ struct node_t *build_ID3_tree(struct example_t *examples, int n_ex, struct attri
         /*return a leaf with */
         return new_leaf(examples[most_frequent_label_index(examples, n_ex)].label);
 
-    index = optimal_attribute_index(attributes, n_attr, examples, n_ex);
+    index = optimal_attribute_index_gain(attributes, n_attr, examples, n_ex);
     to_test = &attributes[index];
     node = new_node(to_test);
 
@@ -97,6 +99,8 @@ struct node_t *build_ID3_tree(struct example_t *examples, int n_ex, struct attri
         struct example_t *subset_ex = create_subset_ex_from_attr(examples, n_ex, &l_subset_ex, get_index_attribute(attributes[index].name, attributes_set, n_attr_set), to_test->values[i]);
         struct attribute_t *subset_attr = create_subset_attribute_without(attributes, n_attr, index);
         node->children[i] = build_ID3_tree(subset_ex, l_subset_ex, subset_attr, n_attr-1);
+        free_attributes(&subset_attr, n_attr-1);
+        free_examples(&subset_ex, l_subset_ex);
     }
 
     return node;
@@ -171,6 +175,77 @@ void label_example(struct example_t *example_to_label, struct node_t *tree)
     }
 }
 
+struct node_t *build_C45_tree(struct example_t *examples, int n_ex, struct attribute_t *attributes, int n_attr)
+{
+    string label;
+    struct attribute_t *to_test;
+    struct node_t *node;
+    int i, index;
+
+#ifdef LOG
+    fprintf(log_file, "\t\texamples :\n");
+    fdisplay_examples(log_file, examples, n_ex);
+    fprintf(log_file, "\t\tattributes :\n");
+    fdisplay_attributes(log_file, attributes, n_attr);
+    fprintf(log_file, "\n");
+#endif
+
+    /*if there is no example left, then*/
+    if(n_ex == 0)
+        /*leave without creating a node*/
+        return NULL;
+    /*if every piece of examples has the very same label, then*/
+    if(is_const_label(examples, n_ex, label))
+        /*return the so called label in a leaf*/
+        return new_leaf(label);
+    /*if every attribute has already been tested, then*/
+    if(n_attr == 0)
+        /*return a leaf with */
+        return new_leaf(examples[most_frequent_label_index(examples, n_ex)].label);
+
+    index = optimal_attribute_index_gain_ratio(attributes, n_attr, examples, n_ex);
+    to_test = &attributes[index];
+    node = new_node(to_test);
+
+    for(i = 0; i < to_test->n_values; ++i)
+    {
+        int l_subset_ex;
+        struct example_t *subset_ex = create_subset_ex_from_attr(examples, n_ex, &l_subset_ex, get_index_attribute(attributes[index].name, attributes_set, n_attr_set), to_test->values[i]);
+        struct attribute_t *subset_attr = create_subset_attribute_without(attributes, n_attr, index);
+        node->children[i] = build_ID3_tree(subset_ex, l_subset_ex, subset_attr, n_attr-1);
+    }
+
+    return node;
+}
+
+void free_examples(struct example_t **examples, int n_ex)
+{
+    int i;
+    for(i = 0; i < n_ex; ++i)
+        free((*examples)[i].attributes);
+    free(*examples);
+    *examples = NULL;
+}
+
+void free_attributes(struct attribute_t **attributes, int n_attr)
+{
+    int i;
+    for(i = 0; i < n_attr; ++i)
+        free((*attributes)[i].values);
+    free(*attributes);
+    *attributes = NULL;
+}
+
+void delete_tree(struct node_t **node)
+{
+    int i;
+    for(i = 0; i < (*node)->nb_children; ++i)
+        delete_tree(&(*node)->children[i]);
+    free(*node);
+    *node = NULL;
+}
+
+
 /*static function*/
 static bool is_const_label(const struct example_t *examples, int n_ex, string label)
 {
@@ -238,27 +313,27 @@ static int most_frequent_label_index(const struct example_t *examples, int n_ex)
 
 static double entropy(const struct example_t *examples, int n_ex)
 {
-    struct counter *tested_labeles = malloc(sizeof(*tested_labeles) * n_ex);
+    struct counter *tested_labels = malloc(sizeof(*tested_labels) * n_ex);
     double ret = 0.;
     int i,
         tmp,
         index = 0;
     for(i = 0; i < n_ex; ++i)
     {
-        if((tmp = get_first_index(tested_labeles, index, examples[i].label)) == -1)
+        if((tmp = get_first_index(tested_labels, index, examples[i].label)) == -1)
         {
-            strcpy(tested_labeles[index].label, examples[i].label);
-            tested_labeles[index].count = 1;
+            strcpy(tested_labels[index].label, examples[i].label);
+            tested_labels[index].count = 1;
             ++index;
         }
         else
         {
-            ++tested_labeles[tmp].count;
+            ++tested_labels[tmp].count;
         }
     }
     for(i = 0; i < index; ++i)
-        ret -= tested_labeles[i].count * log((double)tested_labeles[i].count/n_ex);
-    free(tested_labeles);
+        ret -= tested_labels[i].count * log((double)tested_labels[i].count/n_ex);
+    free(tested_labels);
     return ret/(log(2) * n_ex);
 }
 
@@ -313,10 +388,11 @@ static double gain(const struct attribute_t *attribute, const struct example_t *
         }
         ret += index*entropy(ex_set, index)/n_ex;
     }
+    free(ex_set);
     return ret;
 }
 
-static int optimal_attribute_index(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex)
+static int optimal_attribute_index_gain(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex)
 {
     int i,
         ret = 0;
@@ -325,6 +401,23 @@ static int optimal_attribute_index(const struct attribute_t *attributes, int n_a
     for(i = 0; i < n_attr; ++i)
     {
         if((tmp = gain(&attributes[i], examples, n_ex)) < min_value)
+        {
+            min_value = tmp;
+            ret = i;
+        }
+    }
+    return ret;
+}
+
+static int optimal_attribute_index_gain_ratio(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex)
+{
+    int i,
+        ret = 0;
+    double min_value = 1.,
+           tmp;
+    for(i = 0; i < n_attr; ++i)
+    {
+        if((tmp = gain_ratio(&attributes[i], examples, n_ex)) < min_value)
         {
             min_value = tmp;
             ret = i;
@@ -365,3 +458,28 @@ static struct attribute_t *create_subset_attribute_without(const struct attribut
             add_attribute(ret, &index_tab, &attributes[i]);
     return ret;
 }
+
+static double gain_ratio(const struct attribute_t *attribute, const struct example_t *examples, int n_ex)
+{
+    double ret = 0.0;
+    struct example_t *ex_set = malloc(sizeof(*ex_set) * n_ex);
+    string v;
+    int i, j, index;
+    int index_attr = get_index_attribute(attribute->name, attributes_set, n_attr_set);
+
+    for(j = 0; j < attribute->n_values; ++j)
+    {
+        strcpy(v, attribute->values[j]);
+        index = 0;
+        /*ex_set = S_v*/
+        for(i = 0; i < n_ex; ++i)
+        {
+            if(strcmp(examples[i].attributes[index_attr], v) == 0)
+                add_example(ex_set, &index, &examples[i]);
+        }
+        ret += entropy(ex_set, index)/log((double)index/n_ex);
+    }
+    free(ex_set);
+    return ret*(-log(2));
+}
+
