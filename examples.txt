@@ -1,0 +1,20 @@
+4
+3 Outlook Sunny Overcast Rain
+3 Temperature Hot Mild Cool
+2 Humidity High Normal
+2 Wind Weak Strong
+14
+Sunny Hot High Weak Non
+Sunny Hot High Strong Non
+Overcast Hot High Weak Oui
+Rain Mild High Weak Oui
+Rain Cool Normal Weak Oui
+Rain Cool Normal Strong Non
+Overcast Cool Normal Strong Oui
+Sunny Mild High Weak Non
+Sunny Cool Normal Weak Oui
+Rain Mild Normal Weak Oui
+Sunny Mild Normal Strong Oui
+Overcast Mild High Strong Oui
+Overcast Hot Normal Weak Oui
+Rain Mild High Strong Non

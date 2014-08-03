@@ -1,0 +1,39 @@
+		examples :
+Ensoleille Chaud Elevee Faible Non
+Ensoleille Chaud Elevee Fort Non
+Nuageux Chaud Elevee Faible Oui
+Pluvieux Moyen Elevee Faible Oui
+Pluvieux Frais Normale Faible Oui
+Pluvieux Frais Normale Fort Non
+		attributes :
+Previsions Temperature Humidite Vent 
+
+		examples :
+Ensoleille Chaud Elevee Faible Non
+Ensoleille Chaud Elevee Fort Non
+		attributes :
+Temperature Humidite Vent 
+
+		examples :
+Nuageux Chaud Elevee Faible Oui
+		attributes :
+Temperature Humidite Vent 
+
+		examples :
+Pluvieux Moyen Elevee Faible Oui
+Pluvieux Frais Normale Faible Oui
+Pluvieux Frais Normale Fort Non
+		attributes :
+Temperature Humidite Vent 
+
+		examples :
+Pluvieux Moyen Elevee Faible Oui
+Pluvieux Frais Normale Faible Oui
+		attributes :
+Temperature Humidite 
+
+		examples :
+Pluvieux Frais Normale Fort Non
+		attributes :
+Temperature Humidite 
+
