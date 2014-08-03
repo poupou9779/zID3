@@ -295,7 +295,7 @@ static int get_index_attribute(const string name, const struct attribute_t *attr
 
 static double gain(const struct attribute_t *attribute, const struct example_t *examples, int n_ex)
 {
-    double ret = entropy(examples, n_ex);
+    double ret = 0.0;
     struct example_t *ex_set = malloc(sizeof(*ex_set) * n_ex);
     string v;
     int i, j, index;
@@ -311,7 +311,7 @@ static double gain(const struct attribute_t *attribute, const struct example_t *
             if(strcmp(examples[i].attributes[index_attr], v) == 0)
                 add_example(ex_set, &index, &examples[i]);
         }
-        ret -= index*entropy(ex_set, index)/n_ex;
+        ret += index*entropy(ex_set, index)/n_ex;
     }
     return ret;
 }
@@ -320,13 +320,13 @@ static int optimal_attribute_index(const struct attribute_t *attributes, int n_a
 {
     int i,
         ret = 0;
-    double max_value = -1.,
+    double min_value = 1.,
            tmp;
     for(i = 0; i < n_attr; ++i)
     {
-        if((tmp = gain(&attributes[i], examples, n_ex)) > max_value)
+        if((tmp = gain(&attributes[i], examples, n_ex)) < min_value)
         {
-            max_value = tmp;
+            min_value = tmp;
             ret = i;
         }
     }
@@ -365,5 +365,3 @@ static struct attribute_t *create_subset_attribute_without(const struct attribut
             add_attribute(ret, &index_tab, &attributes[i]);
     return ret;
 }
-
-
