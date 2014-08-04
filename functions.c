@@ -370,7 +370,8 @@ static int get_first_index(const struct counter *tab, int len_tab, const string 
 
 static int most_frequent_label_index(const struct example_t *examples, int n_ex)
 {
-    struct counter *tab = malloc(sizeof(*tab) * n_ex);
+    void *tmp_ptr;
+    struct counter *tab = NULL;
     int i,
         tmp,
         index = 0,
@@ -380,6 +381,10 @@ static int most_frequent_label_index(const struct example_t *examples, int n_ex)
     {
         if((tmp = get_first_index(tab, index, examples[i].label)) == -1)
         {
+            tmp_ptr = realloc(tab, sizeof(*tab) * (index+1));
+            if(tmp_ptr == NULL)
+                leave_memory_error("most_frequent_label_index");
+            tab = tmp_ptr;
             strcpy(tab[index].label, examples[i].label);
             tab[index].count = 0;
             tab[index].index = i;
@@ -401,7 +406,8 @@ static int most_frequent_label_index(const struct example_t *examples, int n_ex)
 
 static double entropy(const struct example_t *examples, int n_ex)
 {
-    struct counter *tested_labels = malloc(sizeof(*tested_labels) * n_ex);
+    void *tmp_ptr;
+    struct counter *tested_labels = NULL;
     double ret = 0.;
     int i,
         tmp,
@@ -410,6 +416,10 @@ static double entropy(const struct example_t *examples, int n_ex)
     {
         if((tmp = get_first_index(tested_labels, index, examples[i].label)) == -1)
         {
+            tmp_ptr = realloc(tested_labels, sizeof(*tested_labels) * (index+1));
+            if(tmp_ptr == NULL)
+                leave_memory_error("entropy");
+            tested_labels = tmp_ptr;
             strcpy(tested_labels[index].label, examples[i].label);
             tested_labels[index].count = 1;
             ++index;
@@ -460,18 +470,16 @@ static double gain(const struct attribute_t *attribute, const struct example_t *
 {
     double ret = 0.0;
     struct example_t *ex_set = malloc(sizeof(*ex_set) * n_ex);
-    string v;
     int i, j, index;
     int index_attr = get_index_attribute(attribute->name, attributes_set, n_attr_set);
 
     for(j = 0; j < attribute->n_values; ++j)
     {
-        strcpy(v, attribute->values[j]);
         index = 0;
         /*ex_set = S_v*/
         for(i = 0; i < n_ex; ++i)
         {
-            if(strcmp(examples[i].attributes[index_attr], v) == 0)
+            if(strcmp(examples[i].attributes[index_attr], attribute->values[j]) == 0)
                 add_example(ex_set, &index, &examples[i]);
         }
         ret += index*entropy(ex_set, index)/n_ex;
@@ -532,11 +540,18 @@ static struct node_t *new_node(const struct attribute_t *attribute)
 static struct example_t *create_subset_ex_from_attr(const struct example_t *examples, int n_ex, int *len_subset, int index_attribute, string value)
 {
     int i;
-    struct example_t *ret = malloc(sizeof(*ret) * n_ex);
+    void *tmp_ptr;
+    struct example_t *ret = NULL;
     *len_subset = 0;
     for(i = 0; i < n_ex; ++i)
         if(strcmp(examples[i].attributes[index_attribute], value) == 0)
+        {
+            tmp_ptr = realloc(ret, (*len_subset+1) * sizeof(*ret));
+            if(tmp_ptr == NULL)
+                leave_memory_error("create_subset_ex_from_attr");
+            ret = tmp_ptr;
             add_example(ret, len_subset, &examples[i]);
+        }
     return ret;
 }
 

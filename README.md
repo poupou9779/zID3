@@ -6,4 +6,3 @@ It is a decision tree based on Shannon entropy.
 ##TODO
 * comment code (in english) ;
 * complete C4.5 algorithm ;
-* find abusive uses allocations and use realloc instead.
