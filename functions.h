@@ -7,7 +7,7 @@
 
 #define ALLOCATION_FAILED -1
 
-void get_datas_from_file(const char *path, struct example_t **ex, int *n_ex, struct attribute_t **attr, int *n_attr);
+void get_datas_from_file(const string path, struct example_t **ex, int *n_ex, struct attribute_t **attr, int *n_attr);
 
 struct node_t *build_ID3_tree(struct example_t *examples, int n_ex, struct attribute_t *attributes, int n_attr);
 
@@ -39,6 +39,6 @@ void delete_tree(struct node_t **node);
 
 int get_tree_size(const struct node_t *tree);
 
-struct node_t *load_tree(const string path);
+struct node_t *load_tree(const string path, struct attribute_t **attributes, int *n_attr);
 
 #endif

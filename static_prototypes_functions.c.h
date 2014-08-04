@@ -21,5 +21,6 @@ static struct node_t *new_node(const struct attribute_t *attribute);
 static struct example_t *create_subset_ex_from_attr(const struct example_t *examples, int n_ex, int *len_subset, int index_attribute, string value);
 static struct attribute_t *create_subset_attribute_without(const struct attribute_t *attributes, int n_attr, int index);
 static double gain_ratio(const struct attribute_t *attribute, const struct example_t *examples, int n_ex);
+static void load_attributes(FILE *f, struct attribute_t **attributes, int *n_attr);
 
 #endif

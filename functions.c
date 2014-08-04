@@ -13,9 +13,10 @@ extern struct attribute_t *attributes_set;
 extern int n_attr_set;
 extern FILE *log_file;
 
-void get_datas_from_file(const char *path, struct example_t **ex, int *n_ex, struct attribute_t **attr, int *n_attr)
+void get_datas_from_file(const string path, struct example_t **ex, int *n_ex, struct attribute_t **attr, int *n_attr)
 {
     int i, j;
+    string buffer;
     FILE *f = fopen(path, "r");
 
     if(ex == NULL || attr == NULL)
@@ -23,16 +24,8 @@ void get_datas_from_file(const char *path, struct example_t **ex, int *n_ex, str
 
     if(f != NULL)
     {
-        fscanf(f, "%d\n", n_attr);
-        (*attr) = malloc(sizeof(**attr) * *n_attr);
-        for(i = 0; i < *n_attr; ++i)
-        {
-            fscanf(f, "%d %s", &(*attr)[i].n_values, (*attr)[i].name);
-            (*attr)[i].values = malloc(sizeof(*(*attr)[i].values) * (*attr)[i].n_values);
-            for(j = 0; j < (*attr)[i].n_values; ++j)
-                fscanf(f, "%s%*c", (*attr)[i].values[j]);
-        }
-
+        load_attributes(f, attr, n_attr);
+        while(fgets(buffer, sizeof(buffer), f) != NULL && strstr(buffer, "#examples") == NULL);
         fscanf(f, "%d\n", n_ex);
         *ex = malloc(sizeof(**ex) * *n_ex);
         for(i = 0; i < *n_ex; ++i)
@@ -239,13 +232,20 @@ int get_tree_size(const struct node_t *tree)
     return ret+1;
 }
 
-struct node_t *load_tree(const string path)
+struct node_t *load_tree(const string path, struct attribute_t **attributes, int *n_attr)
 {
+    string buffer;
     struct node_t *ret;
     FILE *f = fopen(path, "r");
     if(f == NULL)
         return NULL;
-    ret = load_tree_tab(f, 0);
+    while(fgets(buffer, sizeof(buffer), f) != NULL)
+    {
+        if(strstr(buffer, "#attributes") != NULL)
+            load_attributes(f, attributes, n_attr);
+        else if(strstr(buffer, "#tree"))
+            ret = load_tree_tab(f, 0);
+    }
     free(f);
     return ret;
 }
@@ -253,6 +253,20 @@ struct node_t *load_tree(const string path)
 
 /*static function*/
 #define leave_memory_error(f) leave_memory_error_fl(f, __LINE__)
+static void load_attributes(FILE *f, struct attribute_t **attributes, int *n_attr)
+{
+    int i, j;
+    fscanf(f, "%d\n", n_attr);
+    (*attributes) = malloc(sizeof(**attributes) * *n_attr);
+    for(i = 0; i < *n_attr; ++i)
+    {
+        fscanf(f, "%d %s", &(*attributes)[i].n_values, (*attributes)[i].name);
+        (*attributes)[i].values = malloc(sizeof(*(*attributes)[i].values) * (*attributes)[i].n_values);
+        for(j = 0; j < (*attributes)[i].n_values; ++j)
+            fscanf(f, "%s%*c", (*attributes)[i].values[j]);
+    }
+}
+
 static void leave_memory_error_fl(const string function, int line)
 {
     fprintf(log_file, "Memory error in function %s at line %d\n", function, line);

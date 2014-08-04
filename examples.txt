@@ -1,8 +1,10 @@
+#attributes
 4
 3 Outlook Sunny Overcast Rain
 3 Temperature Hot Mild Cool
 2 Humidity High Normal
 2 Wind Weak Strong
+#examples
 14
 Sunny Hot High Weak No
 Sunny Hot High Strong No

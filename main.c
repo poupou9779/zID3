@@ -37,9 +37,10 @@ int main(void)
     tree = build_ID3_tree(examples, n_ex, attributes_set, n_attr_set);
     printf("Tree is build and its size is %d.\n", get_tree_size(tree));
 #elif defined (LOAD_TREE)
-    tree = load_tree("tree.NEL");
+    tree = load_tree("tree.NEL", &attributes_set, &n_attr_set);
     display_tree(tree);
 #endif
+    display_tree(tree);
 
 #ifdef LOG
     fclose(log_file);
