@@ -3,8 +3,6 @@
 
 #define DELETE(str) *(str) = '\0'
 
-#define LENGTH_STACKS 16
-
 typedef char string[64]; /*to avoid allocation all the time*/
 
 #define bool int
