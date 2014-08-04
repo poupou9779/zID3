@@ -1,70 +1,23 @@
-		examples :
-Sunny Hot High Weak No
-Sunny Hot High Strong No
-Overcast Hot High Weak Yes
-Rain Mild High Weak Yes
-Rain Cool Normal Weak Yes
-Rain Cool Normal Strong No
-Overcast Cool Normal Strong Yes
-Sunny Mild High Weak No
-Sunny Cool Normal Weak Yes
-Rain Mild Normal Weak Yes
-Sunny Mild Normal Strong Yes
-Overcast Mild High Strong Yes
-Overcast Hot Normal Weak Yes
-Rain Mild High Strong No
-		attributes :
-Outlook Temperature Humidity Wind 
-
-		examples :
-Sunny Hot High Weak No
-Sunny Hot High Strong No
-Sunny Mild High Weak No
-Sunny Cool Normal Weak Yes
-Sunny Mild Normal Strong Yes
-		attributes :
-Temperature Humidity Wind 
-
-		examples :
-Sunny Hot High Weak No
-Sunny Hot High Strong No
-Sunny Mild High Weak No
-		attributes :
-Temperature Wind 
-
-		examples :
-Sunny Cool Normal Weak Yes
-Sunny Mild Normal Strong Yes
-		attributes :
-Temperature Wind 
-
-		examples :
-Overcast Hot High Weak Yes
-Overcast Cool Normal Strong Yes
-Overcast Mild High Strong Yes
-Overcast Hot Normal Weak Yes
-		attributes :
-Temperature Humidity Wind 
-
-		examples :
-Rain Mild High Weak Yes
-Rain Cool Normal Weak Yes
-Rain Cool Normal Strong No
-Rain Mild Normal Weak Yes
-Rain Mild High Strong No
-		attributes :
-Temperature Humidity Wind 
-
-		examples :
-Rain Mild High Weak Yes
-Rain Cool Normal Weak Yes
-Rain Mild Normal Weak Yes
-		attributes :
-Temperature Humidity 
-
-		examples :
-Rain Cool Normal Strong No
-Rain Mild High Strong No
-		attributes :
-Temperature Humidity 
-
+0 tabs
+creating a new node for Outlook
+exploring [-Sunny in Outlook]
+1 tabs
+creating a new node for Humidity
+exploring [-High in Humidity]
+2 tabs
+creating a "No" node
+exploring [-Normal in Humidity]
+2 tabs
+creating a "Yes" node
+exploring [-Overcast in Outlook]
+1 tabs
+creating a "Yes" node
+exploring [-Rain in Outlook]
+1 tabs
+creating a new node for Wind
+exploring [-Weak in Wind]
+2 tabs
+creating a "Yes" node
+exploring [-Strong in Wind]
+2 tabs
+creating a "No" node

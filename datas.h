@@ -34,6 +34,7 @@ struct node_t
         string label;           /*only if the current node is a leaf*/
         string name_attribute;  /*only if the current node is a node*/
     } property;
+    string *attribute_value;    /*only if the current node is a node*/
 };
 
 /*used for most_frequent_label_index and get_first_index function*/

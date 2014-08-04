@@ -1,32 +1,17 @@
 #include "datas.h"
 #include "functions.h"
-#include <stdio.h> /*file management*/
+#include "static_prototypes_functions.c.h"
+#include <stdio.h>  /*file management*/
 #include <stdlib.h> /*malloc*/
 #include <string.h> /*string management*/
 #include <math.h>   /*log*/
+#include <ctype.h>  /*isalpha*/
 
 #define LOG
 
 extern struct attribute_t *attributes_set;
 extern int n_attr_set;
 extern FILE *log_file;
-
-/*static prototypes*/
-static bool is_const_label(const struct example_t *examples, int n_ex, string label);
-static struct node_t *new_leaf(const string label);
-static int get_first_index(const struct counter *tab, int len_tab, const string label);
-static int most_frequent_label_index(const struct example_t *examples, int n_ex);
-static double entropy(const struct example_t *examples, int n_ex);
-static void add_example(struct example_t *tab, int *index, const struct example_t *example);
-static void add_attribute(struct attribute_t *tab, int *index, const struct attribute_t *attribute);
-static int get_index_attribute(const string name, const struct attribute_t *attributes, int n_attr);
-static double gain(const struct attribute_t *attribute, const struct example_t *examples, int n_ex);
-static int optimal_attribute_index_gain(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex);
-static int optimal_attribute_index_gain_ratio(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex);
-static struct node_t *new_node(const struct attribute_t *attribute);
-static struct example_t *create_subset_ex_from_attr(const struct example_t *examples, int n_ex, int *len_subset, int index_attribute, string value);
-static struct attribute_t *create_subset_attribute_without(const struct attribute_t *attributes, int n_attr, int index);
-static double gain_ratio(const struct attribute_t *attribute, const struct example_t *examples, int n_ex);
 
 void get_datas_from_file(const char *path, struct example_t **ex, int *n_ex, struct attribute_t **attr, int *n_attr)
 {
@@ -68,13 +53,11 @@ struct node_t *build_ID3_tree(struct example_t *examples, int n_ex, struct attri
     struct node_t *node;
     int i, index;
 
-#ifdef LOG
     fprintf(log_file, "\t\texamples :\n");
     fdisplay_examples(log_file, examples, n_ex);
     fprintf(log_file, "\t\tattributes :\n");
     fdisplay_attributes(log_file, attributes, n_attr);
     fprintf(log_file, "\n");
-#endif
 
     /*if there is no example left, then*/
     if(n_ex == 0)
@@ -99,6 +82,7 @@ struct node_t *build_ID3_tree(struct example_t *examples, int n_ex, struct attri
         struct example_t *subset_ex = create_subset_ex_from_attr(examples, n_ex, &l_subset_ex, get_index_attribute(attributes[index].name, attributes_set, n_attr_set), to_test->values[i]);
         struct attribute_t *subset_attr = create_subset_attribute_without(attributes, n_attr, index);
         node->children[i] = build_ID3_tree(subset_ex, l_subset_ex, subset_attr, n_attr-1);
+        strcpy(node->attribute_value[i], to_test->values[i]);
         free_attributes(&subset_attr, n_attr-1);
         free_examples(&subset_ex, l_subset_ex);
     }
@@ -136,23 +120,22 @@ void fdisplay_attribute(FILE *f, const struct attribute_t *attribute)
 
 void fdisplay_tree_tab(FILE *f, struct node_t *tree, int n_tab)
 {
-    int i, j, index;
+    int i, j;
     if(tree->nb_children != 0)
     {
         for(i = 0; i < n_tab; ++i) fputc('\t', f);
         fprintf(f, "%s\n", tree->property.name_attribute);
         for(j = 0; j < tree->nb_children; ++j)
         {
-            index = get_index_attribute(tree->property.name_attribute, attributes_set, n_attr_set);
             for(i = 0; i < n_tab; ++i) fputc('\t', f);
-            fprintf(f, "(%s)\n", attributes_set[index].values[j]);
+            fprintf(f, "-%s\n", tree->attribute_value[j]);
             fdisplay_tree_tab(f, tree->children[j], n_tab+1);
         }
     }
     else
     {
         for(i = 0; i < n_tab; ++i) fputc('\t', f);
-        fprintf(f, "[%s]\n", tree->property.label);
+        fprintf(f, ".%s\n", tree->property.label);
     }
 }
 
@@ -245,8 +228,110 @@ void delete_tree(struct node_t **node)
     *node = NULL;
 }
 
+int get_tree_size(const struct node_t *tree)
+{
+    int ret = 0;
+    int i;
+    if(tree->nb_children == 0)
+        return 0;
+    for(i = 0; i < tree->nb_children; ++i)
+        ret += get_tree_size(tree->children[i]);
+    return ret+1;
+}
+
+struct node_t *load_tree(const string path)
+{
+    struct node_t *ret;
+    FILE *f = fopen(path, "r");
+    if(f == NULL)
+        return NULL;
+    ret = load_tree_tab(f, 0);
+    free(f);
+    return ret;
+}
+
 
 /*static function*/
+#define leave_memory_error(f) leave_memory_error_fl(f, __LINE__)
+static void leave_memory_error_fl(const string function, int line)
+{
+    fprintf(log_file, "Memory error in function %s at line %d\n", function, line);
+    exit(ALLOCATION_FAILED);
+}
+
+static void add_child(struct node_t *node, struct node_t *son, const string attr_value)
+{
+    void *tmp;
+    ++node->nb_children;
+    tmp = realloc(node->children, node->nb_children * sizeof(*node->children));
+    if(tmp == NULL)
+        leave_memory_error("add_child");
+    node->children = tmp;
+    node->children[node->nb_children-1] = son;
+    tmp = realloc(node->attribute_value, node->nb_children * sizeof(*node->attribute_value));
+    if(tmp == NULL)
+        leave_memory_error("add_child");
+    node->attribute_value = tmp;
+    strcpy(node->attribute_value[node->nb_children-1], attr_value);
+}
+
+static void add_node(struct node_t **node, const string attr_name)
+{
+    *node = malloc(sizeof(**node));
+    (*node)->nb_children = 0;
+    (*node)->children = NULL;
+    (*node)->attribute_value = NULL;
+    strcpy((*node)->property.name_attribute, attr_name);
+}
+
+static char *process(string buffer)
+{
+    if(strrchr(buffer, '\n') != NULL)
+        *strrchr(buffer, '\n') = '\0';
+    return strrchr(buffer, '\t') != NULL ? strrchr(buffer, '\t')+1 : &buffer[0];
+}
+
+#define is_node(b) (isalpha(b[0]))
+#define is_edge(b) (b[0] == '-')
+#define is_leaf(b) (b[0] == '.')
+static struct node_t *load_tree_tab(FILE *f, int n_tab)
+{
+    struct node_t *ret = NULL;
+    string buffer;
+    char *ptr;
+    fpos_t mem;
+
+    fprintf(log_file, "%d tabs\n", n_tab);
+
+    while(fgets(buffer, sizeof(buffer), f) != NULL)
+    {
+        ptr = process(buffer);
+        if((ptr - buffer) == n_tab-1)
+        {
+            fsetpos(f, &mem);
+            break;
+        }
+
+        if(is_node(ptr))
+        {
+            fprintf(log_file, "creating a new node for %s\n", ptr);
+            add_node(&ret, ptr);
+        }
+        else if(is_edge(ptr))
+        {
+            fprintf(log_file, "exploring [%s in %s]\n", ptr, ret->property.name_attribute);
+            add_child(ret, load_tree_tab(f, n_tab+1), ptr+1);
+        }
+        else if(is_leaf(ptr))
+        {
+            fprintf(log_file, "creating a \"%s\" node\n", ptr+1);
+            return new_leaf(ptr+1);
+        }
+        fgetpos(f, &mem);
+    }
+    return ret;
+}
+
 static bool is_const_label(const struct example_t *examples, int n_ex, string label)
 {
     int i;
@@ -265,6 +350,9 @@ static bool is_const_label(const struct example_t *examples, int n_ex, string la
 static struct node_t *new_leaf(const string label)
 {
     struct node_t *ret = malloc(sizeof(*ret));
+    if(ret == NULL)
+        leave_memory_error("new_leaf");
+    ret->attribute_value = NULL;
     ret->children = NULL;
     ret->nb_children = 0;
     strcpy(ret->property.label, label);
@@ -434,6 +522,9 @@ static struct node_t *new_node(const struct attribute_t *attribute)
     ret->children = malloc(sizeof(*ret->children) * ret->nb_children);
     for(i = 0; i < ret->nb_children; ++i)
         ret->children[i] = NULL;
+    ret->attribute_value = malloc(sizeof(*ret->attribute_value) * ret->nb_children);
+    for(i = 0; i < ret->nb_children; ++i)
+        DELETE(ret->attribute_value[i]);
     strcpy(ret->property.name_attribute, attribute->name);
     return ret;
 }
@@ -482,4 +573,3 @@ static double gain_ratio(const struct attribute_t *attribute, const struct examp
     free(ex_set);
     return ret*(-log(2));
 }
-
