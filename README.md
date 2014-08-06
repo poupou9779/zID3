@@ -4,5 +4,4 @@ This algorithm was discovered and published by Ross Quinlan in "machine learning
 It is a decision tree based on Shannon entropy.
 
 ##TODO
-* comment code (in english) ;
-* complete C4.5 algorithm ;
+* complete C4.5 algorithm
