@@ -3,7 +3,7 @@
 
 static void leave_memory_error_fl(const string function, int line);
 static void add_node(struct node_t **node, const string attr_name);
-static void add_child(struct node_t *node, struct node_t *son, const string attr_value);
+static void add_child(struct node_t *node, struct node_t *child, const string attr_value);
 static char *process(string buffer);
 static struct node_t *load_tree_tab(FILE *f, int n_tab);
 static bool is_const_label(const struct example_t *examples, int n_ex, string label);

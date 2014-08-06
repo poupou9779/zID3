@@ -13,19 +13,37 @@ extern struct attribute_t *attributes_set;
 extern int n_attr_set;
 extern FILE *log_file;
 
+/*
+in :
+    - path is the path to the file that contains examples
+    - ex is a pointer on the non-allocated yet tab of examples used to create the tree
+    - n_ex is a pointer on the ex tab length
+    - attr is a pointer on a tab, same than ex
+    - n_attr is same than n_ex
+out :
+    - nothing
+*/
 void get_datas_from_file(const string path, struct example_t **ex, int *n_ex, struct attribute_t **attr, int *n_attr)
 {
     int i, j;
     string buffer;
     FILE *f = fopen(path, "r");
 
-    if(ex == NULL || attr == NULL)
+    /*if parameters aren't correct, then*/
+    if(ex == NULL || attr == NULL || n_ex == NULL || n_attr == NULL)
+        /*leave function*/
         return;
 
     if(f != NULL)
     {
+        /*first, find attributes*/
+        while(fgets(buffer, sizeof(buffer), f) != NULL && strstr(buffer, "#attributes") == NULL);
+        /*then read and load the set*/
         load_attributes(f, attr, n_attr);
+        /*now find the examples*/
         while(fgets(buffer, sizeof(buffer), f) != NULL && strstr(buffer, "#examples") == NULL);
+
+        /*and then load them*/
         fscanf(f, "%d\n", n_ex);
         *ex = malloc(sizeof(**ex) * *n_ex);
         for(i = 0; i < *n_ex; ++i)
@@ -39,7 +57,16 @@ void get_datas_from_file(const string path, struct example_t **ex, int *n_ex, st
     }
 }
 
-struct node_t *build_ID3_tree(struct example_t *examples, int n_ex, struct attribute_t *attributes, int n_attr)
+/*
+in :
+    - examples ei the set of pre-labeled examples
+    - n_ex is explicit
+    - attributes is the list of the unused (yet) attributes. Needed to choose the optimal attribute to test
+    - n_attr is explicit
+out :
+    - a pointer on a node. As the function is recursive, it ends returning the root of the tree but each node is connected to this one
+*/
+struct node_t *build_ID3_tree(const struct example_t *examples, int n_ex, struct attribute_t *attributes, int n_attr)
 {
     string label;
     struct attribute_t *to_test;
@@ -65,17 +92,22 @@ struct node_t *build_ID3_tree(struct example_t *examples, int n_ex, struct attri
         /*return a leaf with */
         return new_leaf(examples[most_frequent_label_index(examples, n_ex)].label);
 
+    /*find the best attribute to test*/
     index = optimal_attribute_index_gain(attributes, n_attr, examples, n_ex);
     to_test = &attributes[index];
+
+    /*then create a new node*/
     node = new_node(to_test);
 
+    /*and for each node, find the following node*/
     for(i = 0; i < to_test->n_values; ++i)
     {
         int l_subset_ex;
         struct example_t *subset_ex = create_subset_ex_from_attr(examples, n_ex, &l_subset_ex, get_index_attribute(attributes[index].name, attributes_set, n_attr_set), to_test->values[i]);
         struct attribute_t *subset_attr = create_subset_attribute_without(attributes, n_attr, index);
+        /*then use recursion system*/
         node->children[i] = build_ID3_tree(subset_ex, l_subset_ex, subset_attr, n_attr-1);
-        strcpy(node->attribute_value[i], to_test->values[i]);
+        strcpy(node->attribute_values[i], to_test->values[i]);
         free_attributes(&subset_attr, n_attr-1);
         free_examples(&subset_ex, l_subset_ex);
     }
@@ -83,6 +115,14 @@ struct node_t *build_ID3_tree(struct example_t *examples, int n_ex, struct attri
     return node;
 }
 
+/*
+in :
+    - f is the file used to write the examples
+    - examples is a tab of example
+    - n_ex is explicit
+out :
+    - nothing
+*/
 void fdisplay_examples(FILE *f, const struct example_t *examples, int n_ex)
 {
     int i;
@@ -90,6 +130,13 @@ void fdisplay_examples(FILE *f, const struct example_t *examples, int n_ex)
         fdisplay_example(f, &examples[i]);
 }
 
+/*
+in :
+    - f is same than above
+    - example is a const pointer on the example to display
+out :
+    - nothing
+*/
 void fdisplay_example(FILE *f, const struct example_t *example)
 {
     int i;
@@ -98,6 +145,14 @@ void fdisplay_example(FILE *f, const struct example_t *example)
     fprintf(f, "%s\n", example->label);
 }
 
+/*
+in :
+    - f is same than above
+    - attributes is a tab of attributes to display
+    - n_attr is explicit
+out :
+    - nothing
+*/
 void fdisplay_attributes(FILE *f, const struct attribute_t *attributes, int n_attr)
 {
     int i;
@@ -106,33 +161,60 @@ void fdisplay_attributes(FILE *f, const struct attribute_t *attributes, int n_at
     fputc('\n', f);
 }
 
+/*
+in :
+    - f is same than above
+    - attribute is a const pointer on the attribute to display
+out :
+    - nothing
+*/
 void fdisplay_attribute(FILE *f, const struct attribute_t *attribute)
 {
     fprintf(f, "%s ", attribute->name);
 }
 
-void fdisplay_tree_tab(FILE *f, struct node_t *tree, int n_tab)
+/*
+in :
+    - f is same than above
+    - tree is initially the root of the tree. But as function is recursive, it may be a subtree as well
+    - n_tab is the recursion depth (usefull to know how many '\t' to print)
+out :
+    - nothing
+*/
+void fdisplay_tree_tab(FILE *f, const struct node_t *tree, int n_tab)
 {
     int i, j;
+    /*if tree is a node*/
     if(tree->nb_children != 0)
     {
         for(i = 0; i < n_tab; ++i) fputc('\t', f);
+        /*print details on the tree with a formatted syntax*/
         fprintf(f, "%s\n", tree->property.name_attribute);
+        /*then use recursion to explore the rest of it*/
         for(j = 0; j < tree->nb_children; ++j)
         {
             for(i = 0; i < n_tab; ++i) fputc('\t', f);
-            fprintf(f, "-%s\n", tree->attribute_value[j]);
+            fprintf(f, "-%s\n", tree->attribute_values[j]);
             fdisplay_tree_tab(f, tree->children[j], n_tab+1);
         }
     }
+    /*otherwise it is a leaf*/
     else
     {
+        /*then only show the classification*/
         for(i = 0; i < n_tab; ++i) fputc('\t', f);
         fprintf(f, ".%s\n", tree->property.label);
     }
 }
 
-void label_example(struct example_t *example_to_label, struct node_t *tree)
+/*
+in  :
+    - example_to_label is explicit
+    - tree is the root of the decision tree
+out :
+    - nothing
+*/
+void label_example(struct example_t *example_to_label, const struct node_t *tree)
 {
     int i, index;
     if(tree->nb_children == 0)
@@ -144,6 +226,7 @@ void label_example(struct example_t *example_to_label, struct node_t *tree)
             index = get_index_attribute(tree->property.name_attribute, attributes_set, n_attr_set);
             if(strcmp(example_to_label->attributes[index], attributes_set[index].values[i]) == 0)
             {
+                /*use recursion to test each node*/
                 label_example(example_to_label, tree->children[i]);
                 return;
             }
@@ -151,6 +234,14 @@ void label_example(struct example_t *example_to_label, struct node_t *tree)
     }
 }
 
+/*
+in :
+    - same than build_ID3_tree
+out :
+    - same than build_ID3_tree
+info :
+    - code not done 100% and some updates are necessary
+*/
 struct node_t *build_C45_tree(struct example_t *examples, int n_ex, struct attribute_t *attributes, int n_attr)
 {
     string label;
@@ -194,6 +285,13 @@ struct node_t *build_C45_tree(struct example_t *examples, int n_ex, struct attri
     return node;
 }
 
+/*
+in :
+    - examples is a pointer on the tab of example sto free
+    - n_ex is explicit
+out :
+    - nothing
+*/
 void free_examples(struct example_t **examples, int n_ex)
 {
     int i;
@@ -203,6 +301,13 @@ void free_examples(struct example_t **examples, int n_ex)
     *examples = NULL;
 }
 
+/*
+in :
+    - attributes is a pointer on the tab of attributes to free
+    - n_attr is explicit
+out :
+    - nothing
+*/
 void free_attributes(struct attribute_t **attributes, int n_attr)
 {
     int i;
@@ -212,6 +317,12 @@ void free_attributes(struct attribute_t **attributes, int n_attr)
     *attributes = NULL;
 }
 
+/*
+in :
+    - node is a pointer on the tree to free
+out :
+    - nothing
+*/
 void delete_tree(struct node_t **node)
 {
     int i;
@@ -221,6 +332,12 @@ void delete_tree(struct node_t **node)
     *node = NULL;
 }
 
+/*
+in :
+    - tree is the tree (or subtree) you want to know the number of non-leaf nodes in
+out :
+    - the subtree size
+*/
 int get_tree_size(const struct node_t *tree)
 {
     int ret = 0;
@@ -228,10 +345,19 @@ int get_tree_size(const struct node_t *tree)
     if(tree->nb_children == 0)
         return 0;
     for(i = 0; i < tree->nb_children; ++i)
+        /*again use recursion to test each node*/
         ret += get_tree_size(tree->children[i]);
     return ret+1;
 }
 
+/*
+in :
+    - path is the path of the file where datas lie (a *.NEL file)
+    - attributes is a pointer on the future tab that will contain the attributes and their values
+    - n_attr is explicit
+out :
+    - the tree that has been loaded grom the file in <path>
+*/
 struct node_t *load_tree(const string path, struct attribute_t **attributes, int *n_attr)
 {
     string buffer;
@@ -239,8 +365,11 @@ struct node_t *load_tree(const string path, struct attribute_t **attributes, int
     FILE *f = fopen(path, "r");
     if(f == NULL)
         return NULL;
+
+
     while(fgets(buffer, sizeof(buffer), f) != NULL)
     {
+        /*on each read line, load the right part of it.*/
         if(strstr(buffer, "#attributes") != NULL)
             load_attributes(f, attributes, n_attr);
         else if(strstr(buffer, "#tree"))
@@ -250,8 +379,50 @@ struct node_t *load_tree(const string path, struct attribute_t **attributes, int
     return ret;
 }
 
+/*
+in :
+    - path is the path of the file where the tree will be saved
+    - tree is explicit
+    - attributes is the set of attributes that have to be saved in the file too
+    - n_attr is explicit
+out :
+    a boolean value for succeeded or failed
+*/
+bool save_tree(const string path, const struct node_t *tree, const struct attribute_t *attributes, int n_attr)
+{
+    FILE *f = fopen(path, "w+");
+    if(f == NULL)
+        return false;
+    fsave_tree(f, tree, attributes, n_attr);
+    fclose(f);
+    return true;
+}
 
-/*static function*/
+/*
+in :
+    - f is the file that will content the tree
+    - rest is same than above
+out :
+    - nothing
+*/
+void fsave_tree(FILE *f, const struct node_t *tree, const struct attribute_t *attributes, int n_attr)
+{
+    fprintf(f, "#attributes\n");
+    fdisplay_attributes(f, attributes, n_attr);
+    fprintf(f, "#tree\n");
+    fdisplay_tree(f, tree);
+}
+
+
+/*static functions*/
+/*
+in :
+    - f is the file that content the attributes that will be loaded
+    - attributes is a pointer on the future tab of examples that are going to be read in the file
+    - n_attr is a pointer on an integer which is the size of the tab
+out :
+    - nothing
+*/
 #define leave_memory_error(f) leave_memory_error_fl(f, __LINE__)
 static void load_attributes(FILE *f, struct attribute_t **attributes, int *n_attr)
 {
@@ -267,13 +438,28 @@ static void load_attributes(FILE *f, struct attribute_t **attributes, int *n_att
     }
 }
 
+/*
+in :
+    - function is the name of the function that calls this function
+    - line is the ID of the line that calls the function
+out :
+    - nothing (function uses the exit-function)
+*/
 static void leave_memory_error_fl(const string function, int line)
 {
     fprintf(log_file, "Memory error in function %s at line %d\n", function, line);
     exit(ALLOCATION_FAILED);
 }
 
-static void add_child(struct node_t *node, struct node_t *son, const string attr_value)
+/*
+in :
+    - node is the node that will be added a child
+    - child is the node that's added to node
+    - attr_value is the value that's related to the child
+out :
+    - nothing
+*/
+static void add_child(struct node_t *node, struct node_t *child, const string attr_value)
 {
     void *tmp;
     ++node->nb_children;
@@ -281,23 +467,36 @@ static void add_child(struct node_t *node, struct node_t *son, const string attr
     if(tmp == NULL)
         leave_memory_error("add_child");
     node->children = tmp;
-    node->children[node->nb_children-1] = son;
-    tmp = realloc(node->attribute_value, node->nb_children * sizeof(*node->attribute_value));
+    node->children[node->nb_children-1] = child;
+    tmp = realloc(node->attribute_values, node->nb_children * sizeof(*node->attribute_values));
     if(tmp == NULL)
         leave_memory_error("add_child");
-    node->attribute_value = tmp;
-    strcpy(node->attribute_value[node->nb_children-1], attr_value);
+    node->attribute_values = tmp;
+    strcpy(node->attribute_values[node->nb_children-1], attr_value);
 }
 
+/*
+in :
+    - node is a pointer of the node that is going to be created
+    - attr_name is the attribute that this node shall test
+out :
+    - nothing
+*/
 static void add_node(struct node_t **node, const string attr_name)
 {
     *node = malloc(sizeof(**node));
     (*node)->nb_children = 0;
     (*node)->children = NULL;
-    (*node)->attribute_value = NULL;
+    (*node)->attribute_values = NULL;
     strcpy((*node)->property.name_attribute, attr_name);
 }
 
+/*
+in :
+    - buffer is the string that's processed (removal of the final '\n' character if it exists)
+out :
+    - the addresse of the first non-'\t' character of the buffer
+*/
 static char *process(string buffer)
 {
     if(strrchr(buffer, '\n') != NULL)
@@ -305,6 +504,13 @@ static char *process(string buffer)
     return strrchr(buffer, '\t') != NULL ? strrchr(buffer, '\t')+1 : &buffer[0];
 }
 
+/*
+in :
+    - f is the file that contents the tree
+    - n_tab is the recursive depth-value
+out :
+    - the tree that is in the file
+*/
 #define is_node(b) (isalpha(b[0]))
 #define is_edge(b) (b[0] == '-')
 #define is_leaf(b) (b[0] == '.')
@@ -346,6 +552,15 @@ static struct node_t *load_tree_tab(FILE *f, int n_tab)
     return ret;
 }
 
+/*
+in :
+    - examples is a tab of labeled examles
+    - n_ex is explicit
+    - label is the pseudo-retun value : if each element of the examples tab is labeled the same way, this parameter takes its value
+out :
+    - true if each element of the tab example is labeled the same
+    - false otherwise
+*/
 static bool is_const_label(const struct example_t *examples, int n_ex, string label)
 {
     int i;
@@ -361,18 +576,32 @@ static bool is_const_label(const struct example_t *examples, int n_ex, string la
     return true;
 }
 
+/*
+in :
+    - label is the value of the leaf that is going to be created
+out :
+    - a leaf-node labeled
+*/
 static struct node_t *new_leaf(const string label)
 {
     struct node_t *ret = malloc(sizeof(*ret));
     if(ret == NULL)
         leave_memory_error("new_leaf");
-    ret->attribute_value = NULL;
+    ret->attribute_values = NULL;
     ret->children = NULL;
     ret->nb_children = 0;
     strcpy(ret->property.label, label);
     return ret;
 }
 
+/*
+in :
+    - tab is the tab you want to get the index in
+    - len_tab is explicit
+    - label is the value you want the first index of
+out :
+    - the index value (-1 if there is no <label> in <tab>)
+*/
 static int get_first_index(const struct counter *tab, int len_tab, const string label)
 {
     int i;
@@ -382,6 +611,13 @@ static int get_first_index(const struct counter *tab, int len_tab, const string 
     return -1;
 }
 
+/*
+in :
+    - examples is a tab that's checked to find the most frequent label
+    - n_ex is explicit
+out :
+    - the index
+*/
 static int most_frequent_label_index(const struct example_t *examples, int n_ex)
 {
     void *tmp_ptr;
@@ -418,6 +654,13 @@ static int most_frequent_label_index(const struct example_t *examples, int n_ex)
     return ret;
 }
 
+/*
+in :
+    - examples is the tab of examples to compute the shannon entropy with
+    - n_ex is explicit
+out :
+    - the shannon entrpy of the examples set
+*/
 static double entropy(const struct example_t *examples, int n_ex)
 {
     void *tmp_ptr;
@@ -449,6 +692,14 @@ static double entropy(const struct example_t *examples, int n_ex)
     return ret/(log(2) * n_ex);
 }
 
+/*
+in :
+    - tab is the tab of examples that's modified
+    - index is the pointer on the index value which is incremented
+    - example is a pointer on the example to add in <tab>
+out :
+    - nothing
+*/
 static void add_example(struct example_t *tab, int *index, const struct example_t *example)
 {
     int i;
@@ -460,6 +711,14 @@ static void add_example(struct example_t *tab, int *index, const struct example_
     ++(*index);
 }
 
+/*
+in :
+    - tab is the tab of attributes that's modified
+    - index is same than above
+    - attribute is a pointer on the attribute to add in attributes>
+out :
+    - nothing
+*/
 static void add_attribute(struct attribute_t *tab, int *index, const struct attribute_t *attribute)
 {
     int i;
@@ -471,6 +730,14 @@ static void add_attribute(struct attribute_t *tab, int *index, const struct attr
     ++(*index);
 }
 
+/*
+in :
+    - name is the name of the attribute to find
+    - attributes is the set of attribute to look in
+    - n_attr is explicit
+out :
+    - the index
+*/
 static int get_index_attribute(const string name, const struct attribute_t *attributes, int n_attr)
 {
     int i;
@@ -480,6 +747,14 @@ static int get_index_attribute(const string name, const struct attribute_t *attr
     return -1;
 }
 
+/*
+in :
+    - attribute is the attribute to compute the gain of
+    - examples is the set of examples used to compute entropy
+    - n_ex is explicit
+out :
+    - the (optimized) gain value
+*/
 static double gain(const struct attribute_t *attribute, const struct example_t *examples, int n_ex)
 {
     double ret = 0.0;
@@ -502,6 +777,15 @@ static double gain(const struct attribute_t *attribute, const struct example_t *
     return ret;
 }
 
+/*
+in :
+    - attributes is the set of attributes to find the optimal one
+    - n_attr is explicit
+    - examples is the set of examples used to compute entropy
+    - n_ex is explicit
+out :
+    - int the index
+*/
 static int optimal_attribute_index_gain(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex)
 {
     int i,
@@ -519,6 +803,9 @@ static int optimal_attribute_index_gain(const struct attribute_t *attributes, in
     return ret;
 }
 
+/*
+same than above for in and out
+*/
 static int optimal_attribute_index_gain_ratio(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex)
 {
     int i,
@@ -536,6 +823,12 @@ static int optimal_attribute_index_gain_ratio(const struct attribute_t *attribut
     return ret;
 }
 
+/*
+in :
+    - attribute is the attribute that is tested in the node that's going to be created
+out :
+    - the non-leaf node
+*/
 static struct node_t *new_node(const struct attribute_t *attribute)
 {
     int i;
@@ -544,13 +837,23 @@ static struct node_t *new_node(const struct attribute_t *attribute)
     ret->children = malloc(sizeof(*ret->children) * ret->nb_children);
     for(i = 0; i < ret->nb_children; ++i)
         ret->children[i] = NULL;
-    ret->attribute_value = malloc(sizeof(*ret->attribute_value) * ret->nb_children);
+    ret->attribute_values = malloc(sizeof(*ret->attribute_values) * ret->nb_children);
     for(i = 0; i < ret->nb_children; ++i)
-        DELETE(ret->attribute_value[i]);
+        DELETE(ret->attribute_values[i]);
     strcpy(ret->property.name_attribute, attribute->name);
     return ret;
 }
 
+/*
+in :
+    - examples is the set of examples where elements of the subset lie
+    - n_ex is explicit
+    - len_sebset is a pointer on the length of the subset
+    - index_attribute is the index of the attribute that is checked to create the subset
+    - value is the value of this attribute
+out :
+    - a tab of examples
+*/
 static struct example_t *create_subset_ex_from_attr(const struct example_t *examples, int n_ex, int *len_subset, int index_attribute, string value)
 {
     int i;
@@ -569,6 +872,14 @@ static struct example_t *create_subset_ex_from_attr(const struct example_t *exam
     return ret;
 }
 
+/*
+in :
+    - attributes is the set of attributes where elements of the subset lie
+    - n_attr is explicit
+    - index is the index of the attributes to not insert in the subset
+out :
+    - a tab of attributes (that do not contain the <index> attribute)
+*/
 static struct attribute_t *create_subset_attribute_without(const struct attribute_t *attributes, int n_attr, int index)
 {
     int i, index_tab = 0;
@@ -579,6 +890,14 @@ static struct attribute_t *create_subset_attribute_without(const struct attribut
     return ret;
 }
 
+/*
+in :
+    - attribute is the attribute to compute the gain of
+    - examples is a tab of examples used to compute entropy
+    - n_ex is explicit
+out :
+    - the gain ration value
+*/
 static double gain_ratio(const struct attribute_t *attribute, const struct example_t *examples, int n_ex)
 {
     double ret = 0.0;
