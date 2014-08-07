@@ -700,6 +700,7 @@ in :
 out :
     - nothing
 */
+#define add_attribute add_example
 static void add_example(struct example_t *tab, int *index, const struct example_t *example)
 {
     int i;
@@ -708,25 +709,6 @@ static void add_example(struct example_t *tab, int *index, const struct example_
         strcpy(tab[*index].tab_values[i], example->tab_values[i]);
     strcpy(tab[*index].property, example->property);
     tab[*index].l_tab = example->l_tab;
-    ++(*index);
-}
-
-/*
-in :
-    - tab is the tab of attributes that's modified
-    - index is same than above
-    - attribute is a pointer on the attribute to add in attributes>
-out :
-    - nothing
-*/
-static void add_attribute(struct attribute_t *tab, int *index, const struct attribute_t *attribute)
-{
-    int i;
-    strcpy(tab[*index].property, attribute->property);
-    tab[*index].l_tab = attribute->l_tab;
-    tab[*index].tab_values = malloc(sizeof(*tab[*index].tab_values) * tab[*index].l_tab);
-    for(i = 0; i < tab[*index].l_tab; ++i)
-        strcpy(tab[*index].tab_values[i], attribute->tab_values[i]);
     ++(*index);
 }
 

@@ -12,7 +12,6 @@ static int get_first_index(const struct counter *tab, int len_tab, const string 
 static int most_frequent_label_index(const struct example_t *examples, int n_ex);
 static double entropy(const struct example_t *examples, int n_ex);
 static void add_example(struct example_t *tab, int *index, const struct example_t *example);
-static void add_attribute(struct attribute_t *tab, int *index, const struct attribute_t *attribute);
 static int get_index_attribute(const string name, const struct attribute_t *attributes, int n_attr);
 static double gain(const struct attribute_t *attribute, const struct example_t *examples, int n_ex);
 static int optimal_attribute_index_gain(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex);
