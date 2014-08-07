@@ -38,7 +38,6 @@ int main(void)
     printf("Tree is build and its size is %d.\n", get_tree_size(tree));
 #elif defined (LOAD_TREE)
     tree = load_tree("tree.NEL", &attributes_set, &n_attr_set);
-    display_tree(tree);
 #endif
     display_tree(tree);
 

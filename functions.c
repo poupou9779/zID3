@@ -48,11 +48,11 @@ void get_datas_from_file(const string path, struct example_t **ex, int *n_ex, st
         *ex = malloc(sizeof(**ex) * *n_ex);
         for(i = 0; i < *n_ex; ++i)
         {
-            (*ex)[i].n_attributes = *n_attr;
-            (*ex)[i].attributes = malloc(sizeof(*(*ex)[i].attributes) * *n_attr);
+            (*ex)[i].l_tab = *n_attr;
+            (*ex)[i].tab_values = malloc(sizeof(*(*ex)[i].tab_values) * *n_attr);
             for(j = 0; j < *n_attr; ++j)
-                fscanf(f, "%s ", (*ex)[i].attributes[j]);
-            fscanf(f, "%s\n", (*ex)[i].label);
+                fscanf(f, "%s ", (*ex)[i].tab_values[j]);
+            fscanf(f, "%s\n", (*ex)[i].property);
         }
     }
 }
@@ -90,7 +90,7 @@ struct node_t *build_ID3_tree(const struct example_t *examples, int n_ex, struct
     /*if every attribute has already been tested, then*/
     if(n_attr == 0)
         /*return a leaf with */
-        return new_leaf(examples[most_frequent_label_index(examples, n_ex)].label);
+        return new_leaf(examples[most_frequent_label_index(examples, n_ex)].property);
 
     /*find the best attribute to test*/
     index = optimal_attribute_index_gain(attributes, n_attr, examples, n_ex);
@@ -100,14 +100,14 @@ struct node_t *build_ID3_tree(const struct example_t *examples, int n_ex, struct
     node = new_node(to_test);
 
     /*and for each node, find the following node*/
-    for(i = 0; i < to_test->n_values; ++i)
+    for(i = 0; i < to_test->l_tab; ++i)
     {
         int l_subset_ex;
-        struct example_t *subset_ex = create_subset_ex_from_attr(examples, n_ex, &l_subset_ex, get_index_attribute(attributes[index].name, attributes_set, n_attr_set), to_test->values[i]);
+        struct example_t *subset_ex = create_subset_ex_from_attr(examples, n_ex, &l_subset_ex, get_index_attribute(attributes[index].property, attributes_set, n_attr_set), to_test->tab_values[i]);
         struct attribute_t *subset_attr = create_subset_attribute_without(attributes, n_attr, index);
         /*then use recursion system*/
         node->children[i] = build_ID3_tree(subset_ex, l_subset_ex, subset_attr, n_attr-1);
-        strcpy(node->attribute_values[i], to_test->values[i]);
+        strcpy(node->attribute_values[i], to_test->tab_values[i]);
         free_attributes(&subset_attr, n_attr-1);
         free_examples(&subset_ex, l_subset_ex);
     }
@@ -140,9 +140,9 @@ out :
 void fdisplay_example(FILE *f, const struct example_t *example)
 {
     int i;
-    for(i = 0; i < example->n_attributes; ++i)
-        fprintf(f, "%s ", example->attributes[i]);
-    fprintf(f, "%s\n", example->label);
+    for(i = 0; i < example->l_tab; ++i)
+        fprintf(f, "%s ", example->tab_values[i]);
+    fprintf(f, "%s\n", example->property);
 }
 
 /*
@@ -157,7 +157,7 @@ void fdisplay_attributes(FILE *f, const struct attribute_t *attributes, int n_at
 {
     int i;
     for(i = 0; i < n_attr; ++i)
-        fprintf(f, "%s ", attributes[i].name);
+        fprintf(f, "%s ", attributes[i].property);
     fputc('\n', f);
 }
 
@@ -170,7 +170,7 @@ out :
 */
 void fdisplay_attribute(FILE *f, const struct attribute_t *attribute)
 {
-    fprintf(f, "%s ", attribute->name);
+    fprintf(f, "%s ", attribute->property);
 }
 
 /*
@@ -218,13 +218,13 @@ void label_example(struct example_t *example_to_label, const struct node_t *tree
 {
     int i, index;
     if(tree->nb_children == 0)
-        strcpy(example_to_label->label, tree->property.label);
+        strcpy(example_to_label->property, tree->property.label);
     else
     {
         for(i = 0; i < tree->nb_children; ++i)
         {
             index = get_index_attribute(tree->property.name_attribute, attributes_set, n_attr_set);
-            if(strcmp(example_to_label->attributes[index], attributes_set[index].values[i]) == 0)
+            if(strcmp(example_to_label->tab_values[index], attributes_set[index].tab_values[i]) == 0)
             {
                 /*use recursion to test each node*/
                 label_example(example_to_label, tree->children[i]);
@@ -268,16 +268,16 @@ struct node_t *build_C45_tree(struct example_t *examples, int n_ex, struct attri
     /*if every attribute has already been tested, then*/
     if(n_attr == 0)
         /*return a leaf with */
-        return new_leaf(examples[most_frequent_label_index(examples, n_ex)].label);
+        return new_leaf(examples[most_frequent_label_index(examples, n_ex)].property);
 
     index = optimal_attribute_index_gain_ratio(attributes, n_attr, examples, n_ex);
     to_test = &attributes[index];
     node = new_node(to_test);
 
-    for(i = 0; i < to_test->n_values; ++i)
+    for(i = 0; i < to_test->l_tab; ++i)
     {
         int l_subset_ex;
-        struct example_t *subset_ex = create_subset_ex_from_attr(examples, n_ex, &l_subset_ex, get_index_attribute(attributes[index].name, attributes_set, n_attr_set), to_test->values[i]);
+        struct example_t *subset_ex = create_subset_ex_from_attr(examples, n_ex, &l_subset_ex, get_index_attribute(attributes[index].property, attributes_set, n_attr_set), to_test->tab_values[i]);
         struct attribute_t *subset_attr = create_subset_attribute_without(attributes, n_attr, index);
         node->children[i] = build_ID3_tree(subset_ex, l_subset_ex, subset_attr, n_attr-1);
     }
@@ -296,7 +296,7 @@ void free_examples(struct example_t **examples, int n_ex)
 {
     int i;
     for(i = 0; i < n_ex; ++i)
-        free((*examples)[i].attributes);
+        free((*examples)[i].tab_values);
     free(*examples);
     *examples = NULL;
 }
@@ -312,7 +312,7 @@ void free_attributes(struct attribute_t **attributes, int n_attr)
 {
     int i;
     for(i = 0; i < n_attr; ++i)
-        free((*attributes)[i].values);
+        free((*attributes)[i].tab_values);
     free(*attributes);
     *attributes = NULL;
 }
@@ -431,10 +431,10 @@ static void load_attributes(FILE *f, struct attribute_t **attributes, int *n_att
     (*attributes) = malloc(sizeof(**attributes) * *n_attr);
     for(i = 0; i < *n_attr; ++i)
     {
-        fscanf(f, "%d %s", &(*attributes)[i].n_values, (*attributes)[i].name);
-        (*attributes)[i].values = malloc(sizeof(*(*attributes)[i].values) * (*attributes)[i].n_values);
-        for(j = 0; j < (*attributes)[i].n_values; ++j)
-            fscanf(f, "%s%*c", (*attributes)[i].values[j]);
+        fscanf(f, "%d %s", &(*attributes)[i].l_tab, (*attributes)[i].property);
+        (*attributes)[i].tab_values = malloc(sizeof(*(*attributes)[i].tab_values) * (*attributes)[i].l_tab);
+        for(j = 0; j < (*attributes)[i].l_tab; ++j)
+            fscanf(f, "%s%*c", (*attributes)[i].tab_values[j]);
     }
 }
 
@@ -569,9 +569,9 @@ static bool is_const_label(const struct example_t *examples, int n_ex, string la
         strcpy(label, "ERROR label");
         return true;
     }
-    strcpy(label, examples[0].label);
+    strcpy(label, examples[0].property);
     for(i = 1; i < n_ex; ++i)
-        if(strcmp(label, examples[i].label) != 0)
+        if(strcmp(label, examples[i].property) != 0)
             return false;
     return true;
 }
@@ -629,13 +629,13 @@ static int most_frequent_label_index(const struct example_t *examples, int n_ex)
         ret = 0;
     for(i = 0; i < n_ex; ++i)
     {
-        if((tmp = get_first_index(tab, index, examples[i].label)) == -1)
+        if((tmp = get_first_index(tab, index, examples[i].property)) == -1)
         {
             tmp_ptr = realloc(tab, sizeof(*tab) * (index+1));
             if(tmp_ptr == NULL)
                 leave_memory_error("most_frequent_label_index");
             tab = tmp_ptr;
-            strcpy(tab[index].label, examples[i].label);
+            strcpy(tab[index].label, examples[i].property);
             tab[index].count = 0;
             tab[index].index = i;
             ++index;
@@ -671,13 +671,13 @@ static double entropy(const struct example_t *examples, int n_ex)
         index = 0;
     for(i = 0; i < n_ex; ++i)
     {
-        if((tmp = get_first_index(tested_labels, index, examples[i].label)) == -1)
+        if((tmp = get_first_index(tested_labels, index, examples[i].property)) == -1)
         {
             tmp_ptr = realloc(tested_labels, sizeof(*tested_labels) * (index+1));
             if(tmp_ptr == NULL)
                 leave_memory_error("entropy");
             tested_labels = tmp_ptr;
-            strcpy(tested_labels[index].label, examples[i].label);
+            strcpy(tested_labels[index].label, examples[i].property);
             tested_labels[index].count = 1;
             ++index;
         }
@@ -703,11 +703,11 @@ out :
 static void add_example(struct example_t *tab, int *index, const struct example_t *example)
 {
     int i;
-    tab[*index].attributes = malloc(sizeof(*tab[*index].attributes) * example->n_attributes);
-    for(i = 0; i < example->n_attributes; ++i)
-        strcpy(tab[*index].attributes[i], example->attributes[i]);
-    strcpy(tab[*index].label, example->label);
-    tab[*index].n_attributes = example->n_attributes;
+    tab[*index].tab_values = malloc(sizeof(*tab[*index].tab_values) * example->l_tab);
+    for(i = 0; i < example->l_tab; ++i)
+        strcpy(tab[*index].tab_values[i], example->tab_values[i]);
+    strcpy(tab[*index].property, example->property);
+    tab[*index].l_tab = example->l_tab;
     ++(*index);
 }
 
@@ -722,11 +722,11 @@ out :
 static void add_attribute(struct attribute_t *tab, int *index, const struct attribute_t *attribute)
 {
     int i;
-    strcpy(tab[*index].name, attribute->name);
-    tab[*index].n_values = attribute->n_values;
-    tab[*index].values = malloc(sizeof(*tab[*index].values) * tab[*index].n_values);
-    for(i = 0; i < tab[*index].n_values; ++i)
-        strcpy(tab[*index].values[i], attribute->values[i]);
+    strcpy(tab[*index].property, attribute->property);
+    tab[*index].l_tab = attribute->l_tab;
+    tab[*index].tab_values = malloc(sizeof(*tab[*index].tab_values) * tab[*index].l_tab);
+    for(i = 0; i < tab[*index].l_tab; ++i)
+        strcpy(tab[*index].tab_values[i], attribute->tab_values[i]);
     ++(*index);
 }
 
@@ -742,7 +742,7 @@ static int get_index_attribute(const string name, const struct attribute_t *attr
 {
     int i;
     for(i = 0; i < n_attr; ++i)
-        if(strcmp(name, attributes[i].name) == 0)
+        if(strcmp(name, attributes[i].property) == 0)
             return i;
     return -1;
 }
@@ -760,15 +760,15 @@ static double gain(const struct attribute_t *attribute, const struct example_t *
     double ret = 0.0;
     struct example_t *ex_set = malloc(sizeof(*ex_set) * n_ex);
     int i, j, index;
-    int index_attr = get_index_attribute(attribute->name, attributes_set, n_attr_set);
+    int index_attr = get_index_attribute(attribute->property, attributes_set, n_attr_set);
 
-    for(j = 0; j < attribute->n_values; ++j)
+    for(j = 0; j < attribute->l_tab; ++j)
     {
         index = 0;
         /*ex_set = S_v*/
         for(i = 0; i < n_ex; ++i)
         {
-            if(strcmp(examples[i].attributes[index_attr], attribute->values[j]) == 0)
+            if(strcmp(examples[i].tab_values[index_attr], attribute->tab_values[j]) == 0)
                 add_example(ex_set, &index, &examples[i]);
         }
         ret += index*entropy(ex_set, index)/n_ex;
@@ -833,14 +833,14 @@ static struct node_t *new_node(const struct attribute_t *attribute)
 {
     int i;
     struct node_t *ret = malloc(sizeof(*ret));
-    ret->nb_children = attribute->n_values;
+    ret->nb_children = attribute->l_tab;
     ret->children = malloc(sizeof(*ret->children) * ret->nb_children);
     for(i = 0; i < ret->nb_children; ++i)
         ret->children[i] = NULL;
     ret->attribute_values = malloc(sizeof(*ret->attribute_values) * ret->nb_children);
     for(i = 0; i < ret->nb_children; ++i)
         DELETE(ret->attribute_values[i]);
-    strcpy(ret->property.name_attribute, attribute->name);
+    strcpy(ret->property.name_attribute, attribute->property);
     return ret;
 }
 
@@ -861,7 +861,7 @@ static struct example_t *create_subset_ex_from_attr(const struct example_t *exam
     struct example_t *ret = NULL;
     *len_subset = 0;
     for(i = 0; i < n_ex; ++i)
-        if(strcmp(examples[i].attributes[index_attribute], value) == 0)
+        if(strcmp(examples[i].tab_values[index_attribute], value) == 0)
         {
             tmp_ptr = realloc(ret, (*len_subset+1) * sizeof(*ret));
             if(tmp_ptr == NULL)
@@ -904,16 +904,16 @@ static double gain_ratio(const struct attribute_t *attribute, const struct examp
     struct example_t *ex_set = malloc(sizeof(*ex_set) * n_ex);
     string v;
     int i, j, index;
-    int index_attr = get_index_attribute(attribute->name, attributes_set, n_attr_set);
+    int index_attr = get_index_attribute(attribute->property, attributes_set, n_attr_set);
 
-    for(j = 0; j < attribute->n_values; ++j)
+    for(j = 0; j < attribute->l_tab; ++j)
     {
-        strcpy(v, attribute->values[j]);
+        strcpy(v, attribute->tab_values[j]);
         index = 0;
         /*ex_set = S_v*/
         for(i = 0; i < n_ex; ++i)
         {
-            if(strcmp(examples[i].attributes[index_attr], v) == 0)
+            if(strcmp(examples[i].tab_values[index_attr], v) == 0)
                 add_example(ex_set, &index, &examples[i]);
         }
         ret += entropy(ex_set, index)/log((double)index/n_ex);

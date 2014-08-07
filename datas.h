@@ -11,24 +11,18 @@ typedef char string[64]; /*to avoid allocation all the time*/
 #define true 1
 #define false 0
 
-struct example_t
+#define attribute_t example_t
+#define example_t container_t
+struct container_t
 {
-    /*label is the classification obtained with the attributes*/
-    string label;
-    /*the pointer is used to create a tab of strings which contains different attributes values (one per attribute)*/
-    string *attributes;
-    /*'n' means 'number'. So this is example_t.attributes size.*/
-    int n_attributes;
-};
-
-struct attribute_t
-{
-    /*name is the name/title of the algorithm (for instance : Humidity)*/
-    string name;
-    /*same than above about pointer. This tab contains all of the possible values for each attribute*/
-    string *values;
-    /*same than above, this is the size of attribute_t.values.*/
-    int n_values;
+    /*property = (container == example_t ? label : name)*/
+    string property;
+    /*the pointer is used to create a tab of strings which contains different attributes values (one per attribute)
+      if container_t == example_t, then tab_values contains the value of each attribute
+      else if container_t == attribute_t, then tab_values contains all of the different values that the attribute can have*/
+    string *tab_values;
+    /*'l' means length. So l_tab is the length of <tab_values>*/
+    int l_tab;
 };
 
 struct node_t

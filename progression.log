@@ -1,0 +1,23 @@
+0 tabs
+creating a new node for Outlook
+exploring [-Sunny in Outlook]
+1 tabs
+creating a new node for Humidity
+exploring [-High in Humidity]
+2 tabs
+creating a "No" node
+exploring [-Normal in Humidity]
+2 tabs
+creating a "Yes" node
+exploring [-Overcast in Outlook]
+1 tabs
+creating a "Yes" node
+exploring [-Rain in Outlook]
+1 tabs
+creating a new node for Wind
+exploring [-Weak in Wind]
+2 tabs
+creating a "Yes" node
+exploring [-Strong in Wind]
+2 tabs
+creating a "No" node
