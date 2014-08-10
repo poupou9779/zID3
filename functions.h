@@ -5,10 +5,13 @@
 
 #include <stdio.h> /*FILE*/
 
+#define HIGHER ">"
+#define LESS_OR_EQUAL "<="
+
 #define ALLOCATION_FAILED -1
 
 #define display_example(e) fdisplay_example(stdout, e)
-#define display_examples(e, n) fdisplay(stdout, e, n)
+#define display_examples(e, n) fdisplay_examples(stdout, e, n)
 #define display_attribute(a) fdisplay_attribute(stdout, a)
 #define display_attributes(a, n) fdisplay_attributes(stdout, a, n)
 #define display_tree(n) fdisplay_tree(stdout, n)
@@ -18,7 +21,10 @@
 
 struct node_t *build_ID3_tree(const struct example_t *examples, int n_ex, struct attribute_t *attributes, int n_attr);
 struct node_t *build_C45_tree(struct example_t *examples, int n_ex, struct attribute_t *attributes, int n_attr);
+int compare_int_strings(const void *s1, const void *s2);
 void delete_tree(struct node_t **node);
+void discretize(struct example_t *examples, int n_ex, struct attribute_t *attributes, int n_attr);
+void discretize_attribute(struct example_t *examples, int n_ex, struct attribute_t *attributes);
 void fdisplay_attribute(FILE *f, const struct attribute_t *attribute);
 void fdisplay_attributes(FILE *f, const struct attribute_t *attributes, int n_attr);
 void fdisplay_example(FILE *f, const struct example_t *example);

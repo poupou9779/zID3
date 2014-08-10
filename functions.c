@@ -6,8 +6,10 @@
 #include <string.h> /*string management*/
 #include <math.h>   /*log*/
 #include <ctype.h>  /*isalpha*/
+#include <float.h>  /*DBL_EPSILON*/
 
 #define LOG
+#define C45
 
 #define leave_memory_error(f) leave_memory_error_fl(f, __LINE__)
 #define add_attribute add_example
@@ -18,6 +20,10 @@
 extern struct attribute_t *attributes_set;
 extern int n_attr_set;
 extern FILE *log_file;
+
+#ifdef C45
+int index_to_discretize;
+#endif
 
 /*
 in :
@@ -80,6 +86,23 @@ static void add_node(struct node_t **node, const string attr_name)
 
 /*
 in :
+    - container is a pointer on the container to modify
+    - value is the value to add in container
+out :
+    - nothing
+*/
+static void add_value(struct container_t *container, const string value)
+{
+    string *tmp = realloc(container->tab_values, (container->l_tab+1)*sizeof(*container->tab_values));
+    if(tmp == NULL)
+        leave_memory_error("add_value");
+    container->tab_values = tmp;
+    strcpy(container->tab_values[container->l_tab], value);
+    ++container->l_tab;
+}
+
+/*
+in :
     - same than build_ID3_tree
 out :
     - same than build_ID3_tree
@@ -93,13 +116,11 @@ struct node_t *build_C45_tree(struct example_t *examples, int n_ex, struct attri
     struct node_t *node;
     int i, index;
 
-#ifdef LOG
     fprintf(log_file, "\t\texamples :\n");
     fdisplay_examples(log_file, examples, n_ex);
     fprintf(log_file, "\t\tattributes :\n");
     fdisplay_attributes(log_file, attributes, n_attr);
     fprintf(log_file, "\n");
-#endif
 
     /*if there is no example left, then*/
     if(n_ex == 0)
@@ -117,13 +138,15 @@ struct node_t *build_C45_tree(struct example_t *examples, int n_ex, struct attri
     index = optimal_attribute_index_gain_ratio(attributes, n_attr, examples, n_ex);
     to_test = &attributes[index];
     node = new_node(to_test);
-
     for(i = 0; i < to_test->l_tab; ++i)
     {
         int l_subset_ex;
         struct example_t *subset_ex = create_subset_ex_from_attr(examples, n_ex, &l_subset_ex, get_index_attribute(attributes[index].property, attributes_set, n_attr_set), to_test->tab_values[i]);
         struct attribute_t *subset_attr = create_subset_attribute_without(attributes, n_attr, index);
-        node->children[i] = build_ID3_tree(subset_ex, l_subset_ex, subset_attr, n_attr-1);
+        node->children[i] = build_C45_tree(subset_ex, l_subset_ex, subset_attr, n_attr-1);
+        strcpy(node->attribute_values[i], to_test->tab_values[i]);
+        free_attributes(&subset_attr, n_attr-1);
+        free_examples(&subset_ex, l_subset_ex);
     }
 
     return node;
@@ -189,6 +212,24 @@ struct node_t *build_ID3_tree(const struct example_t *examples, int n_ex, struct
 
 /*
 in :
+    - s1 is the 1st string containing a number
+out :
+    - > 0 if s1 > s2
+    - 0 if s1 == s2
+    - < 0 if s1 < s2
+*/
+int compare_int_strings(const void *e1, const void *e2)
+{
+    const struct example_t *el1 = (const struct example_t *)e1,
+                           *el2 = (const struct example_t *)e2;
+    double a, b;
+    sscanf(el1->tab_values[index_to_discretize], "%lf", &a);
+    sscanf(el2->tab_values[index_to_discretize], "%lf", &b);
+    return a>b ? 1 : b>a ? -1 : 0;
+}
+
+/*
+in :
     - attributes is the set of attributes where elements of the subset lie
     - n_attr is explicit
     - index is the index of the attributes to not insert in the subset
@@ -250,10 +291,71 @@ void delete_tree(struct node_t **node)
 
 /*
 in :
+    - examples is the tab of examples that will have their continous attribute values discretized
+    - n_ex is explicit
+    - attributes is the tab of attributes that will be modified (aatributes[i].tab_values)
+    - n_attr is explicit
+out :
+    - nothing
+*/
+void discretize(struct example_t *examples, int n_ex, struct attribute_t *attributes, int n_attr)
+{
+    int i;
+    for(i = 0; i < n_attr; ++i)
+        if(attributes[i].l_tab == 0)
+        {
+            free(attributes[i].tab_values);
+            attributes[i].l_tab = 0;
+            index_to_discretize = i;
+            discretize_attribute(examples, n_ex, &attributes[i]);
+        }
+}
+
+/*
+in :
+    - examples is same than above
+    - n_ex is explicit
+    - attribute is the attribute which is discretized
+    - index is the index of the attrbiute in the examples values
+out :
+    - nothing
+*/
+void discretize_attribute(struct example_t *examples, int n_ex, struct attribute_t *attribute)
+{
+    int i;
+    double first_value = -INFINITE,
+           last_value,
+           tmp;
+    string tmp_label,
+           tmp_value = "";
+    qsort((void *)examples,  n_ex, sizeof(*examples), compare_int_strings);
+    strcpy(tmp_label, examples[0].property);
+    get_double_from_string(examples[0].tab_values[index_to_discretize], &last_value);
+    for(i = 1; i < n_ex; ++i)
+    {
+        if(strcmp(examples[i].property, tmp_label) != 0)
+        {
+            if(first_value != -INFINITE)
+                sprintf(tmp_value, "%s %f", HIGHER, first_value);
+            get_double_from_string(examples[i].tab_values[index_to_discretize], &tmp);
+            sprintf(tmp_value, "%s %s %f", tmp_value, LESS_OR_EQUAL, (last_value + tmp)/2.);
+            add_value(attribute, tmp_value);
+            get_double_from_string(examples[i].tab_values[index_to_discretize], &first_value);
+            strcpy(tmp_label, examples[i].property);
+        }
+        else
+        {
+            get_double_from_string(examples[i].tab_values[index_to_discretize], &last_value);
+        }
+    }
+}
+
+/*
+in :
     - examples is the tab of examples to compute the shannon entropy with
     - n_ex is explicit
 out :
-    - the shannon entrpy of the examples set
+    - the shannon entropy of the examples set
 */
 static double entropy(const struct example_t *examples, int n_ex)
 {
@@ -295,7 +397,15 @@ out :
 */
 void fdisplay_attribute(FILE *f, const struct attribute_t *attribute)
 {
+    int i;
     fprintf(f, "%s ", attribute->property);
+    if(attribute->l_tab == 0)
+        fputc('C', f);
+    else
+        fprintf(f, "%d ", attribute->l_tab);
+    for(i = 0; i < attribute->l_tab; ++i)
+        fprintf(f, "%s ", attribute->tab_values[i]);
+    fputc('\n', f);
 }
 
 /*
@@ -309,8 +419,9 @@ out :
 void fdisplay_attributes(FILE *f, const struct attribute_t *attributes, int n_attr)
 {
     int i;
+    fprintf(f, "%d\n", n_attr);
     for(i = 0; i < n_attr; ++i)
-        fprintf(f, "%s ", attributes[i].property);
+        fdisplay_attribute(f, &attributes[i]);
     fputc('\n', f);
 }
 
@@ -451,19 +562,36 @@ static double gain_ratio(const struct attribute_t *attribute, const struct examp
 {
     double ret = 0.0;
     struct example_t *ex_set = malloc(sizeof(*ex_set) * n_ex);
-    string v;
     int i, j, index;
     int index_attr = get_index_attribute(attribute->property, attributes_set, n_attr_set);
 
     for(j = 0; j < attribute->l_tab; ++j)
     {
-        strcpy(v, attribute->tab_values[j]);
         index = 0;
         /*ex_set = S_v*/
         for(i = 0; i < n_ex; ++i)
         {
-            if(strcmp(examples[i].tab_values[index_attr], v) == 0)
-                add_example(ex_set, &index, &examples[i]);
+            if(strncmp(attribute->tab_values[j],  HIGHER, sizeof(HIGHER)) == 0)
+            {
+                double down, up, v;
+                get_double_from_string(examples[i].tab_values[index_attr], &v);
+                sscanf(attribute->tab_values[j], "%*c %lf %*c%*c %lf", &down, &up);
+                if(down < v && (v > up || v - up < DBL_EPSILON))
+                    add_example(ex_set, &index, &examples[i]);
+            }
+            else if(strncmp(attribute->tab_values[j], LESS_OR_EQUAL, sizeof(LESS_OR_EQUAL)) == 0)
+            {
+                double up, v;
+                get_double_from_string(examples[i].tab_values[index_attr], &v);
+                sscanf(attribute->tab_values[j], "%*c %lf", &up);
+                if(v > up || v - up < DBL_EPSILON)
+                    add_example(ex_set, &index, &examples[i]);
+            }
+            else
+            {
+                if(strcmp(examples[i].tab_values[index_attr], attribute->tab_values[j]) == 0)
+                    add_example(ex_set, &index, &examples[i]);
+            }
         }
         ret += entropy(ex_set, index)/log((double)index/n_ex);
     }
@@ -513,6 +641,18 @@ void get_datas_from_file(const string path, struct example_t **ex, int *n_ex, st
             fscanf(f, "%s\n", (*ex)[i].property);
         }
     }
+}
+
+/*
+in :
+    - str is a string containing a number
+    - value is a pointer on the double that will contain the number which is written in str
+out :
+    - nothing
+*/
+static void get_double_from_string(const string str, double *value)
+{
+    sscanf(str, "%lf", value);
 }
 
 /*
@@ -646,7 +786,14 @@ static void load_attributes(FILE *f, struct attribute_t **attributes, int *n_att
     (*attributes) = malloc(sizeof(**attributes) * *n_attr);
     for(i = 0; i < *n_attr; ++i)
     {
-        fscanf(f, "%d %s", &(*attributes)[i].l_tab, (*attributes)[i].property);
+        fscanf(f, "%s ", (*attributes)[i].property);
+        if(fscanf(f, "%d ", &(*attributes)[i].l_tab) == 0)
+        {
+            (*attributes)[i].l_tab = 0;
+            (*attributes)[i].tab_values = NULL;
+            while(fgetc(f) != '\n');
+            continue;
+        }
         (*attributes)[i].tab_values = malloc(sizeof(*(*attributes)[i].tab_values) * (*attributes)[i].l_tab);
         for(j = 0; j < (*attributes)[i].l_tab; ++j)
             fscanf(f, "%s%*c", (*attributes)[i].tab_values[j]);
@@ -838,20 +985,34 @@ static int optimal_attribute_index_gain(const struct attribute_t *attributes, in
 /*
 same than above for in and out
 */
-static int optimal_attribute_index_gain_ratio(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex)
+static int optimal_attribute_index_gain_ratio(struct attribute_t *attributes, int n_attr, struct example_t *examples, int n_ex)
 {
     int i,
         ret = 0;
     double min_value = 1.,
            tmp;
+    bool has_been_discretized = false;
     for(i = 0; i < n_attr; ++i)
     {
+        if(attributes[i].l_tab == 0)
+        {
+            index_to_discretize = get_index_attribute(attributes[i].property, attributes_set, n_attr_set);
+            discretize_attribute(examples, n_ex, &attributes[i]);
+            has_been_discretized = true;
+        }
         if((tmp = gain_ratio(&attributes[i], examples, n_ex)) < min_value)
         {
             min_value = tmp;
             ret = i;
         }
+        if(has_been_discretized == true)
+        {
+            free(attributes[i].tab_values);
+            attributes[i].l_tab = 0;
+            has_been_discretized = false;
+        }
     }
+
     return ret;
 }
 

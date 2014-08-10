@@ -4,6 +4,8 @@
 /*macro to clarify string initialisation*/
 #define DELETE(str) *(str) = '\0'
 
+#define INFINITE DBL_MAX
+
 typedef char string[64]; /*to avoid allocation all the time*/
 
 /*as bool isn't a normalized type in C89, defines should be enough here*/

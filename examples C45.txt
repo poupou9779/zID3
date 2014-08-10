@@ -1,0 +1,23 @@
+#attributes
+4
+Outlook 3 Sunny Overcast Rain
+Temperature C
+Humidity 2 High Normal
+Wind 2 Weak Strong
+#examples
+14
+Sunny 29.5 High Weak No
+Sunny 26.5 High Strong No
+Overcast 28.3 High Weak Yes
+Rain 21.0 High Weak Yes
+Rain 20.0 Normal Weak Yes
+Rain 18.5 Normal Strong No
+Overcast 18.0 Normal Strong Yes
+Sunny 22.2 High Weak No
+Sunny 20.5 Normal Weak Yes
+Rain 24.0 Normal Weak Yes
+Sunny 24.0 Normal Strong Yes
+Overcast 22.2 High Strong Yes
+Overcast 27.2 Normal Weak Yes
+Rain 21.6 High Strong No
+Sunny 26.0 Normal Strong No

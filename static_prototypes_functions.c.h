@@ -9,8 +9,9 @@ static struct example_t *create_subset_ex_from_attr(const struct example_t *exam
 static double entropy(const struct example_t *examples, int n_ex);
 static double gain(const struct attribute_t *attribute, const struct example_t *examples, int n_ex);
 static double gain_ratio(const struct attribute_t *attribute, const struct example_t *examples, int n_ex);
+static void get_double_from_string(const string str, double *value);
 static int get_first_index(const struct counter *tab, int len_tab, const string label);
-static int get_index_attribute(const string name, const struct attribute_t *attributes, int n_attr);;
+static int get_index_attribute(const string name, const struct attribute_t *attributes, int n_attr);
 static bool is_const_label(const struct example_t *examples, int n_ex, string label);
 static void leave_memory_error_fl(const string function, int line);
 static void load_attributes(FILE *f, struct attribute_t **attributes, int *n_attr);
@@ -19,7 +20,7 @@ static int most_frequent_label_index(const struct example_t *examples, int n_ex)
 static struct node_t *new_leaf(const string label);
 static struct node_t *new_node(const struct attribute_t *attribute);
 static int optimal_attribute_index_gain(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex);
-static int optimal_attribute_index_gain_ratio(const struct attribute_t *attributes, int n_attr, const struct example_t *examples, int n_ex);
+static int optimal_attribute_index_gain_ratio(struct attribute_t *attributes, int n_attr, struct example_t *examples, int n_ex);
 static char *process(string buffer);
 
 #endif

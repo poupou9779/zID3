@@ -1,23 +1,99 @@
-0 tabs
-creating a new node for Outlook
-exploring [-Sunny in Outlook]
-1 tabs
-creating a new node for Humidity
-exploring [-High in Humidity]
-2 tabs
-creating a "No" node
-exploring [-Normal in Humidity]
-2 tabs
-creating a "Yes" node
-exploring [-Overcast in Outlook]
-1 tabs
-creating a "Yes" node
-exploring [-Rain in Outlook]
-1 tabs
-creating a new node for Wind
-exploring [-Weak in Wind]
-2 tabs
-creating a "Yes" node
-exploring [-Strong in Wind]
-2 tabs
-creating a "No" node
+		examples :
+Sunny 29.5 High Weak No
+Sunny 26.5 High Strong No
+Overcast 28.3 High Weak Yes
+Rain 21.0 High Weak Yes
+Rain 20.0 Normal Weak Yes
+Rain 18.5 Normal Strong No
+Overcast 18.0 Normal Strong Yes
+Sunny 22.2 High Weak No
+Sunny 20.5 Normal Weak Yes
+Rain 24.0 Normal Weak Yes
+Sunny 24.0 Normal Strong Yes
+Overcast 22.2 High Strong Yes
+Overcast 27.2 Normal Weak Yes
+Rain 21.6 High Strong No
+		attributes :
+4
+Outlook 3 Sunny Overcast Rain 
+Temperature C
+Humidity 2 High Normal 
+Wind 2 Weak Strong 
+
+
+		examples :
+Sunny 20.5 Normal Weak Yes
+Sunny 22.2 High Weak No
+Sunny 24.0 Normal Strong Yes
+Sunny 26.5 High Strong No
+Sunny 29.5 High Weak No
+		attributes :
+3
+Temperature C
+Humidity 2 High Normal 
+Wind 2 Weak Strong 
+
+
+		examples :
+Sunny 22.2 High Weak No
+Sunny 26.5 High Strong No
+Sunny 29.5 High Weak No
+		attributes :
+2
+Temperature C
+Wind 2 Weak Strong 
+
+
+		examples :
+Sunny 20.5 Normal Weak Yes
+Sunny 24.0 Normal Strong Yes
+		attributes :
+2
+Temperature C
+Wind 2 Weak Strong 
+
+
+		examples :
+Overcast 18.0 Normal Strong Yes
+Overcast 22.2 High Strong Yes
+Overcast 27.2 Normal Weak Yes
+Overcast 28.3 High Weak Yes
+		attributes :
+3
+Temperature C
+Humidity 2 High Normal 
+Wind 2 Weak Strong 
+
+
+		examples :
+Rain 18.5 Normal Strong No
+Rain 20.0 Normal Weak Yes
+Rain 21.0 High Weak Yes
+Rain 21.6 High Strong No
+Rain 24.0 Normal Weak Yes
+		attributes :
+3
+Temperature C
+Humidity 2 High Normal 
+Wind 2 Weak Strong 
+
+
+		examples :
+Rain 20.0 Normal Weak Yes
+Rain 21.0 High Weak Yes
+Rain 24.0 Normal Weak Yes
+		attributes :
+2
+Temperature C
+Humidity 2 High Normal 
+
+
+		examples :
+Rain 18.5 Normal Strong No
+Rain 21.6 High Strong No
+		attributes :
+2
+Temperature C
+Humidity 2 High Normal 
+
+
